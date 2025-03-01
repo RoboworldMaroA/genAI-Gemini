@@ -1,4 +1,7 @@
-"""### Import libraries"""
+# https://roboworld.pl
+# Marek Augustyn
+# Date: 2025-03-01
+# Base on the code from the Google AI Platform
 # This version display loss function curve and save it to a file.
 # It also shows how to update the description of the model and how to delete the model.
 # It also shows how to cancel the tuning job.
@@ -9,15 +12,17 @@
 # It also shows how to evaluate the model.
 # It also shows how to delete the model.
 # It also shows how to update the description of the model.\
-# 
-#  It predict next number when user give a number as input.
-#  Number can be written or in digit.
-#  It can predict next number in sequence.
+# It predict next number when user give a number as input.
+# Number can be written or in digit.
+# It can predict next number in sequence.
 # Input could be in different languages like Japan, Polish French etc.
 import google.generativeai as genai
 import os
-# from google.colab import userdata
-# genai.configure(api_key=userdata.get('GOOGLE_API_KEY'))
+import random
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import time
 
 # add first API key to the system using command:
 # export GOOGLE_API_KEY="your_api_key_here"
@@ -38,8 +43,9 @@ for i, m in zip(range(5), genai.list_tuned_models()):
 
 """## Create tuned model
 
-To create a tuned model, you need to pass your dataset to the model in the `genai.create_tuned_model` method. You can do this be directly defining the input and output values in the call or importing from a file into a dataframe to pass to the method.
-
+To create a tuned model, you need to pass your dataset to the model in the `genai.create_tuned_model` method. 
+You can do this be directly defining the input and output values in the call or
+importing from a file into a dataframe to pass to the method.
 For this example, you will tune a model to generate the next number in the sequence. 
 For example, if the input is `1`, the model should output `2`. 
 If the input is `one hundred`, the output should be `one hundred one`.
@@ -51,7 +57,7 @@ base_model = [
     "flash" in m.name][0]
 base_model
 
-import random
+
 name = f'generate-num-{random.randint(0,10000)}'
 operation = genai.create_tuned_model(
     # You can use a tuned model here too. Set `source_model="tunedModels/..."`
@@ -111,7 +117,8 @@ operation = genai.create_tuned_model(
     learning_rate=0.001,
 )
 
-"""Your tuned model is immediately added to the list of tuned models, but its status is set to "creating" while the model is tuned."""
+"""Your tuned model is immediately added to the list of tuned models, but its status is set to "creating"
+ while the model is tuned."""
 
 model = genai.get_tuned_model(f'tunedModels/{name}')
 
@@ -128,28 +135,22 @@ print(operation.metadata)
 
 """Wait for the training to finish using `operation.result()`, or `operation.wait_bar()`"""
 
-import time
 
 for status in operation.wait_bar():
   time.sleep(30)
 
-"""You can cancel your tuning job any time using the `cancel()` method. Uncomment the line below and run the code cell to cancel your job before it finishes."""
+"""You can cancel your tuning job any time using the `cancel()` method. 
+Uncomment the line below and run the code cell to cancel your job before it finishes."""
 
 # operation.cancel()
 
-"""Once the tuning is complete, you can view the loss curve from the tuning results. The [loss curve](https://ai.google.dev/gemini-api/docs/model-tuning#recommended_configurations) shows how much the model's predictions deviate from the ideal outputs."""
-
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+"""Once the tuning is complete, you can view the loss curve from the tuning results.
+ The [loss curve](https://ai.google.dev/gemini-api/docs/model-tuning#recommended_configurations)
+   shows how much the model's predictions deviate from the ideal outputs."""
 
 model = operation.result()
-
 snapshots = pd.DataFrame(model.tuning_task.snapshots)
-
 sns.lineplot(data=snapshots, x = 'epoch', y='mean_loss')
-
-
 
 # Save the plot to a file
 plt.savefig('loss_curve.png')
@@ -157,8 +158,8 @@ plt.savefig('loss_curve.png')
 # Display the plot
 plt.show()
 
-"""## Evaluate your model
-
+"""
+Evaluate your model
 You can use the `genai.generate_content` method and specify the name of your model to test your model performance.
 """
 
@@ -198,20 +199,3 @@ model = genai.get_tuned_model(f'tunedModels/{name}')
 
 print(model.description)
 
-"""## Delete the model
-
-You can clean up your tuned model list by deleting models you no longer need. 
-Use the `genai.delete_tuned_model` method to delete a model.
-If you canceled any tuning jobs, 
-you may want to delete those as their performance may be unpredictable.
-"""
-
-# genai.delete_tuned_model(f'tunedModels/{name}')
-
-"""The model no longer exists:"""
-
-# try:
-#   m = genai.get_tuned_model(f'tunedModels/{name}')
-#   print(m)
-# except Exception as e:
-#   print(f"{type(e)}: {e}")
